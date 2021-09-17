@@ -1,0 +1,31 @@
+{
+  "name": "redis-pubsub-futures",
+  "version": "1.0.0",
+  "main": "index.js",
+  "author": "Eduardo Mosqueda(@bbaaxx)",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv-safe": "^8.2.0",
+    "fluture": "^14.0.0",
+    "nanoid": "^3.1.25",
+    "redis": "^3.1.2"
+  },
+  "scripts": {
+    "build": "tsc -d --project .",
+    "watch": "tsc --project .",
+    "start:prod": "NODE_ENV=production bash ./run/env/production/run.sh",
+    "start": "nodemon ./src/index.ts",
+    "docker:dev": "bash ./run/env/development/run.sh",
+    "dev": "bash ./run/env/development/run.sh",
+    "dev:debug": "bash ./run/env/development/run.sh --debug",
+    "test": "bash ./run/env/test/run.sh",
+    "lint": "eslint src/**/*.ts",
+    "format": "eslint src/**/*.ts --fix"
+  },
+  "devDependencies": {
+    "@types/node": "^16.9.2",
+    "@types/redis": "^2.8.32",
+    "ts-node": "^10.2.1",
+    "typescript": "^4.4.3"
+  }
+}
