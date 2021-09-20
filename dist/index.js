@@ -22,12 +22,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.rpcClientBuilder = exports.rpcClientFactory = exports.rpcSend = exports.getMessageFactory = exports.marshall = void 0;
-require("dotenv-safe/config");
+exports.rpcClientFactory = exports.rpcClientBuilder = exports.rpcSend = exports.getMessageFactory = exports.marshall = void 0;
+const fluture_1 = __importStar(require("fluture"));
 const redis_1 = __importDefault(require("redis"));
 const nanoid_1 = require("nanoid");
 const timers_1 = require("timers");
-const fluture_1 = __importStar(require("fluture"));
 exports.marshall = {
     encode: (channel, message) => `${channel}::${JSON.stringify(message)}`,
     decode: (rawMessage) => {
@@ -57,8 +56,8 @@ const rpcSend = (serviceChannel) => (options = { timeout: 120 * 1000 }) => (mess
         cleanup();
         reject(err);
     });
-    subscriber.on('message', (channel, rawMessage) => {
-        const [correlationId, stringMessage] = rawMessage.split('::');
+    subscriber.on('message', (_channel, rawMessage) => {
+        const [, stringMessage] = rawMessage.split('::');
         cleanup();
         if (options.json) {
             try {
@@ -81,8 +80,8 @@ const rpcSend = (serviceChannel) => (options = { timeout: 120 * 1000 }) => (mess
     return () => cleanup();
 });
 exports.rpcSend = rpcSend;
-const rpcClientFactory = (serviceChannel) => (options) => (onError, onSuccess) => (message) => (0, exports.rpcSend)(serviceChannel)(options)(message).pipe((0, fluture_1.fork)(onError)(onSuccess));
-exports.rpcClientFactory = rpcClientFactory;
-const rpcClientBuilder = (config) => (0, exports.rpcClientFactory)(config.serviceChannel)(config.options)(config.onError, config.onSuccess);
+const rpcClientBuilder = (serviceChannel) => (options) => (onError, onSuccess) => (message) => (0, exports.rpcSend)(serviceChannel)(options)(message).pipe((0, fluture_1.fork)(onError)(onSuccess));
 exports.rpcClientBuilder = rpcClientBuilder;
+const rpcClientFactory = (config) => (0, exports.rpcClientBuilder)(config.serviceChannel)(config.options)(config.onError, config.onSuccess);
+exports.rpcClientFactory = rpcClientFactory;
 //# sourceMappingURL=index.js.map
