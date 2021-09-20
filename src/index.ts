@@ -1,36 +1,56 @@
-import 'dotenv-safe/config';
+import Future, {
+  fork,
+  Cancel,
+  RejectFunction,
+  ResolveFunction,
+  FutureInstance,
+} from 'fluture';
 import redis from 'redis';
 import { nanoid } from 'nanoid';
 import { clearTimeout } from 'timers';
-import Future, { fork, RejectFunction, ResolveFunction } from 'fluture';
 
-type CqrsMessage = {
+export type CqrsMessage = {
   type: string;
-  payload: any;
+  payload?: { [key: string]: unknown };
+  metadata?: {
+    correlationId?: string;
+  };
 };
 
-type RpcSendOptions = {
+export type RpcSendOptions = {
   timeout?: number;
   json?: boolean;
 };
 
-type RcpBuilderConfig = {
+export interface RcpFactoryConfig {
   serviceChannel: string;
   options: RpcSendOptions;
   onError: RejectFunction<unknown>;
   onSuccess: ResolveFunction<unknown>;
+}
+
+export const marshall = {
+  encode: (channel: string | undefined, message: CqrsMessage): string =>
+    `${channel}::${JSON.stringify(message)}`,
+  decode: (rawMessage: string): CqrsMessage => {
+    const [correlationId, stringMessage] = rawMessage.split('::');
+    return {
+      ...JSON.parse(stringMessage),
+      metadata: { correlationId },
+    };
+  },
 };
 
-const getMessageFactory =
+export const getMessageFactory =
   (correlationId: string | undefined) =>
   (message: CqrsMessage): string =>
-    `${correlationId}::${JSON.stringify(message)}`;
+    marshall.encode(correlationId, message);
 
 export const rpcSend =
   (serviceChannel: string) =>
   (options: RpcSendOptions = { timeout: 120 * 1000 }) =>
-  (message: CqrsMessage) =>
-    Future((res, rej) => {
+  (message: CqrsMessage): FutureInstance<unknown, unknown> =>
+    Future((reject, resolve) => {
       const subscriber = redis.createClient();
       const publisher = redis.createClient();
       const correlationId = nanoid();
@@ -46,27 +66,27 @@ export const rpcSend =
 
       subscriber.on('error', err => {
         cleanup();
-        rej(err);
+        reject(err);
       });
 
-      subscriber.on('message', (channel: string, rawMessage: string) => {
-        const [_, stringMessage] = rawMessage.split('::');
+      subscriber.on('message', (_channel: string, rawMessage: string) => {
+        const [, stringMessage] = rawMessage.split('::');
         cleanup();
         if (options.json) {
           try {
-            return res(JSON.parse(stringMessage));
+            return resolve(marshall.decode(rawMessage));
           } catch (error) {
-            return rej(error);
+            return reject(error);
           }
         }
-        return res(stringMessage);
+        return resolve(stringMessage);
       });
 
       subscriber.on('subscribe', () => {
         publisher.publish(serviceChannel, messageFactory(message));
         timeoutId = setTimeout(() => {
           cleanup();
-          rej('TIMEOUT');
+          reject('TIMEOUT');
         }, options.timeout);
       });
 
@@ -75,15 +95,17 @@ export const rpcSend =
       return () => cleanup();
     });
 
-export const rpcClientFactory =
+export const rpcClientBuilder =
   (serviceChannel: string) =>
   (options: RpcSendOptions) =>
   (onError: RejectFunction<unknown>, onSuccess: ResolveFunction<unknown>) =>
-  (message: CqrsMessage) =>
+  (message: CqrsMessage): Cancel =>
     rpcSend(serviceChannel)(options)(message).pipe(fork(onError)(onSuccess));
 
-export const rpcClientBuilder = (config: RcpBuilderConfig) =>
-  rpcClientFactory(config.serviceChannel)(config.options)(
+export const rpcClientFactory = (
+  config: RcpFactoryConfig,
+): ((x: CqrsMessage) => Cancel) =>
+  rpcClientBuilder(config.serviceChannel)(config.options)(
     config.onError,
     config.onSuccess,
   );
