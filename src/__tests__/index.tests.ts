@@ -47,6 +47,7 @@ describe('rpcClientBuilder', () => {
     beforeEach(() => {
       mockServiceResponder = redis.createClient();
       mockServiceListener = redis.createClient();
+
       mockServiceListener.on('message', (_, message) => {
         const { type, metadata } = marshall.decode(message);
         const channelId = metadata?.correlationId as string;
@@ -108,13 +109,6 @@ describe('rpcClientBuilder', () => {
     });
 
     it.only('the RPC call can be cancelled', done => {
-      const onSuccess: RejectFunction<unknown> = error => {
-        done(error);
-      };
-      const onError: ResolveFunction<unknown> = response => {
-        expect(response).toBe('TIMEOUT');
-        done();
-      };
       const client = rpcClientFactory({
         options: { ...callOptions, timeout: 360 * 1000 },
         serviceChannel: SERVICE_CHANNEL,

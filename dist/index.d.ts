@@ -23,6 +23,7 @@ export declare const marshall: {
     decode: (rawMessage: string) => CqrsMessage;
 };
 export declare const getMessageFactory: (correlationId: string | undefined) => (message: CqrsMessage) => string;
-export declare const rpcSend: (serviceChannel: string) => (options?: RpcSendOptions) => (message: CqrsMessage) => FutureInstance<unknown, unknown>;
+export declare const rpcSend: (serviceChannel: string) => (options?: RpcSendOptions) => (message: CqrsMessage) => FutureInstance<Error, unknown>;
 export declare const rpcClientBuilder: (serviceChannel: string) => (options: RpcSendOptions) => (onError: RejectFunction<unknown>, onSuccess: ResolveFunction<unknown>) => (message: CqrsMessage) => Cancel;
 export declare const rpcClientFactory: (config: RcpFactoryConfig) => (x: CqrsMessage) => Cancel;
+export declare const rpcPromiseBuilder: (serviceChannel: string) => (options: RpcSendOptions) => (message: CqrsMessage) => Promise<unknown>;

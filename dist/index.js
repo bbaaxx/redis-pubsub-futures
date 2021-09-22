@@ -22,7 +22,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.rpcClientFactory = exports.rpcClientBuilder = exports.rpcSend = exports.getMessageFactory = exports.marshall = void 0;
+exports.rpcPromiseBuilder = exports.rpcClientFactory = exports.rpcClientBuilder = exports.rpcSend = exports.getMessageFactory = exports.marshall = void 0;
 const fluture_1 = __importStar(require("fluture"));
 const redis_1 = __importDefault(require("redis"));
 const nanoid_1 = require("nanoid");
@@ -64,7 +64,7 @@ const rpcSend = (serviceChannel) => (options = { timeout: 120 * 1000 }) => (mess
                 return resolve(exports.marshall.decode(rawMessage));
             }
             catch (error) {
-                return reject(error);
+                return reject(new Error(error));
             }
         }
         return resolve(stringMessage);
@@ -73,7 +73,7 @@ const rpcSend = (serviceChannel) => (options = { timeout: 120 * 1000 }) => (mess
         publisher.publish(serviceChannel, messageFactory(message));
         timeoutId = setTimeout(() => {
             cleanup();
-            reject('TIMEOUT');
+            reject(new Error('TIMEOUT'));
         }, options.timeout);
     });
     subscriber.subscribe(correlationId);
@@ -84,4 +84,6 @@ const rpcClientBuilder = (serviceChannel) => (options) => (onError, onSuccess) =
 exports.rpcClientBuilder = rpcClientBuilder;
 const rpcClientFactory = (config) => (0, exports.rpcClientBuilder)(config.serviceChannel)(config.options)(config.onError, config.onSuccess);
 exports.rpcClientFactory = rpcClientFactory;
+const rpcPromiseBuilder = (serviceChannel) => (options) => (message) => (0, fluture_1.promise)((0, exports.rpcSend)(serviceChannel)(options)(message));
+exports.rpcPromiseBuilder = rpcPromiseBuilder;
 //# sourceMappingURL=index.js.map
