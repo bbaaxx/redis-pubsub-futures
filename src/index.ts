@@ -1,5 +1,6 @@
 import Future, {
   fork,
+  promise,
   Cancel,
   RejectFunction,
   ResolveFunction,
@@ -49,7 +50,7 @@ export const getMessageFactory =
 export const rpcSend =
   (serviceChannel: string) =>
   (options: RpcSendOptions = { timeout: 120 * 1000 }) =>
-  (message: CqrsMessage): FutureInstance<unknown, unknown> =>
+  (message: CqrsMessage): FutureInstance<Error, unknown> =>
     Future((reject, resolve) => {
       const subscriber = redis.createClient();
       const publisher = redis.createClient();
@@ -76,7 +77,7 @@ export const rpcSend =
           try {
             return resolve(marshall.decode(rawMessage));
           } catch (error) {
-            return reject(error);
+            return reject(new Error(error as string));
           }
         }
         return resolve(stringMessage);
@@ -86,7 +87,7 @@ export const rpcSend =
         publisher.publish(serviceChannel, messageFactory(message));
         timeoutId = setTimeout(() => {
           cleanup();
-          reject('TIMEOUT');
+          reject(new Error('TIMEOUT'));
         }, options.timeout);
       });
 
@@ -109,3 +110,9 @@ export const rpcClientFactory = (
     config.onError,
     config.onSuccess,
   );
+
+export const rpcPromiseBuilder =
+  (serviceChannel: string) =>
+  (options: RpcSendOptions) =>
+  (message: CqrsMessage): Promise<unknown> =>
+    promise(rpcSend(serviceChannel)(options)(message));

@@ -107,7 +107,7 @@ describe('rpcClientBuilder', () => {
       client(unknownMessage);
     });
 
-    it('the RPC call can be cancelled', done => {
+    it.only('the RPC call can be cancelled', done => {
       const onSuccess: RejectFunction<unknown> = error => {
         done(error);
       };
@@ -118,8 +118,8 @@ describe('rpcClientBuilder', () => {
       const client = rpcClientFactory({
         options: { ...callOptions, timeout: 360 * 1000 },
         serviceChannel: SERVICE_CHANNEL,
-        onError,
-        onSuccess,
+        onError: console.error,
+        onSuccess: console.log,
       });
       const cancel = client(unknownMessage);
       cancel();

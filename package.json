@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "A node-redis wrapper to implement an RPC client for redis using Futures written in Typescript",
   "author": "Eduardo Mosqueda(@bbaaxx)",
+  "main": "dist/index.js",
   "keywords": [
     "redis",
     "RPC",
