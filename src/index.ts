@@ -6,7 +6,7 @@ import Future, {
   ResolveFunction,
   FutureInstance,
 } from 'fluture';
-import redis from 'redis';
+import redis, { ClientOpts } from 'redis';
 import { nanoid } from 'nanoid';
 import { clearTimeout } from 'timers';
 
@@ -23,8 +23,12 @@ export type RpcSendOptions = {
   json?: boolean;
 };
 
-export interface RcpFactoryConfig {
+export interface ClientConfig {
   serviceChannel: string;
+  clientOptions?: ClientOpts;
+}
+
+export interface RcpFactoryConfig extends ClientConfig {
   options: RpcSendOptions;
   onError: RejectFunction<unknown>;
   onSuccess: ResolveFunction<unknown>;
@@ -48,12 +52,12 @@ export const getMessageFactory =
     marshall.encode(correlationId, message);
 
 export const rpcSend =
-  (serviceChannel: string) =>
+  ({ serviceChannel, clientOptions = {} }: ClientConfig) =>
   (options: RpcSendOptions = { timeout: 120 * 1000 }) =>
   (message: CqrsMessage): FutureInstance<Error, unknown> =>
     Future((reject, resolve) => {
-      const subscriber = redis.createClient();
-      const publisher = redis.createClient();
+      const subscriber = redis.createClient(clientOptions);
+      const publisher = redis.createClient(clientOptions);
       const correlationId = nanoid();
       const messageFactory = getMessageFactory(correlationId);
       let timeoutId: NodeJS.Timeout;
@@ -97,22 +101,22 @@ export const rpcSend =
     });
 
 export const rpcClientBuilder =
-  (serviceChannel: string) =>
+  (clientOptions: ClientConfig) =>
   (options: RpcSendOptions) =>
   (onError: RejectFunction<unknown>, onSuccess: ResolveFunction<unknown>) =>
   (message: CqrsMessage): Cancel =>
-    rpcSend(serviceChannel)(options)(message).pipe(fork(onError)(onSuccess));
+    rpcSend(clientOptions)(options)(message).pipe(fork(onError)(onSuccess));
 
 export const rpcClientFactory = (
   config: RcpFactoryConfig,
 ): ((x: CqrsMessage) => Cancel) =>
-  rpcClientBuilder(config.serviceChannel)(config.options)(
-    config.onError,
-    config.onSuccess,
-  );
+  rpcClientBuilder({
+    serviceChannel: config.serviceChannel,
+    clientOptions: config.clientOptions,
+  })(config.options)(config.onError, config.onSuccess);
 
 export const rpcPromiseBuilder =
-  (serviceChannel: string) =>
+  (clientOptions: ClientConfig) =>
   (options: RpcSendOptions) =>
   (message: CqrsMessage): Promise<unknown> =>
-    promise(rpcSend(serviceChannel)(options)(message));
+    promise(rpcSend(clientOptions)(options)(message));

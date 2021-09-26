@@ -1,5 +1,11 @@
 import redis from 'redis';
-import { rpcClientBuilder, rpcClientFactory, marshall, CqrsMessage } from '..';
+import {
+  rpcClientBuilder,
+  rpcClientFactory,
+  marshall,
+  CqrsMessage,
+  rpcPromiseBuilder,
+} from '..';
 import { RejectFunction, ResolveFunction } from 'fluture';
 
 jest.mock('redis', () => jest.requireActual('redis-mock'));
@@ -16,7 +22,9 @@ describe('rpcClientBuilder', () => {
   describe('Client Factories', () => {
     describe('rpcClientBuilder', () => {
       it('Allows to build an RPC client by currying', () => {
-        const awaitOptions = rpcClientBuilder(SERVICE_CHANNEL);
+        const awaitOptions = rpcClientBuilder({
+          serviceChannel: SERVICE_CHANNEL,
+        });
         expect(awaitOptions.call).toBeDefined;
         const awaitHandlers = awaitOptions(callOptions);
         expect(awaitHandlers.call).toBeDefined;
@@ -36,6 +44,15 @@ describe('rpcClientBuilder', () => {
           onSuccess: x => x,
         });
         expect(client.call).toBeDefined;
+      });
+    });
+    describe('rpcPromiseBuilder', () => {
+      it('Allows to build an RPC client wrapped in a promise', () => {
+        const client = rpcPromiseBuilder({
+          serviceChannel: SERVICE_CHANNEL,
+        })(callOptions);
+        expect(client.call).toBeDefined;
+        client(pingMessage);
       });
     });
   });
@@ -92,15 +109,14 @@ describe('rpcClientBuilder', () => {
     });
 
     it('should timeout if the RPC does not respond', done => {
-      const onSuccess: RejectFunction<unknown> = error => {
-        done(error);
-      };
-      const onError: ResolveFunction<unknown> = response => {
-        expect(response).toBe('TIMEOUT');
+      const onError: RejectFunction<unknown> = () => {
         done();
       };
+      const onSuccess: ResolveFunction<unknown> = () => {
+        throw new Error('nay');
+      };
       const client = rpcClientFactory({
-        options: { ...callOptions },
+        options: { ...callOptions, timeout: 1500 },
         serviceChannel: SERVICE_CHANNEL,
         onError,
         onSuccess,
@@ -108,7 +124,7 @@ describe('rpcClientBuilder', () => {
       client(unknownMessage);
     });
 
-    it.only('the RPC call can be cancelled', done => {
+    it('the RPC call can be cancelled', done => {
       const client = rpcClientFactory({
         options: { ...callOptions, timeout: 360 * 1000 },
         serviceChannel: SERVICE_CHANNEL,
