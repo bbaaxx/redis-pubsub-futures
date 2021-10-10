@@ -1,6 +1,6 @@
 {
   "name": "redis-pubsub-futures",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "A node-redis wrapper to implement an RPC client for redis using Futures written in Typescript",
   "author": "Eduardo Mosqueda(@bbaaxx)",
   "repository": {
