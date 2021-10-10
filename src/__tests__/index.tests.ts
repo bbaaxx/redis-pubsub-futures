@@ -52,7 +52,6 @@ describe('rpcClientBuilder', () => {
           serviceChannel: SERVICE_CHANNEL,
         })(callOptions);
         expect(client.call).toBeDefined;
-        client(pingMessage);
       });
     });
   });

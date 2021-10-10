@@ -1,8 +1,12 @@
 {
   "name": "redis-pubsub-futures",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "A node-redis wrapper to implement an RPC client for redis using Futures written in Typescript",
   "author": "Eduardo Mosqueda(@bbaaxx)",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bbaaxx/redis-pubsub-futures.git"
+  },
   "main": "dist/index.js",
   "keywords": [
     "redis",
@@ -21,17 +25,17 @@
   },
   "dependencies": {
     "fluture": "^14.0.0",
-    "nanoid": "^3.1.25",
+    "nanoid": "^3.1.29",
     "redis": "^3.1.2"
   },
   "devDependencies": {
-    "@types/jest": "^27.0.1",
-    "@types/node": "^16.9.2",
+    "@types/jest": "^27.0.2",
+    "@types/node": "^16.10.3",
     "@types/redis": "^2.8.32",
-    "@typescript-eslint/eslint-plugin": "^4.31.1",
-    "@typescript-eslint/parser": "^4.31.1",
-    "eslint": "^7.32.0",
-    "jest": "^27.2.0",
+    "@typescript-eslint/eslint-plugin": "^4.33.0",
+    "@typescript-eslint/parser": "^4.33.0",
+    "eslint": "^8.0.0",
+    "jest": "^27.2.5",
     "redis-mock": "^0.56.3",
     "ts-jest": "^27.0.5",
     "ts-node": "^10.2.1",
