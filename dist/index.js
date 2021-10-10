@@ -39,9 +39,9 @@ exports.marshall = {
 };
 const getMessageFactory = (correlationId) => (message) => exports.marshall.encode(correlationId, message);
 exports.getMessageFactory = getMessageFactory;
-const rpcSend = (serviceChannel) => (options = { timeout: 120 * 1000 }) => (message) => (0, fluture_1.default)((reject, resolve) => {
-    const subscriber = redis_1.default.createClient();
-    const publisher = redis_1.default.createClient();
+const rpcSend = ({ serviceChannel, clientOptions = {} }) => (options = { timeout: 120 * 1000 }) => (message) => (0, fluture_1.default)((reject, resolve) => {
+    const subscriber = redis_1.default.createClient(clientOptions);
+    const publisher = redis_1.default.createClient(clientOptions);
     const correlationId = (0, nanoid_1.nanoid)();
     const messageFactory = (0, exports.getMessageFactory)(correlationId);
     let timeoutId;
@@ -80,10 +80,13 @@ const rpcSend = (serviceChannel) => (options = { timeout: 120 * 1000 }) => (mess
     return () => cleanup();
 });
 exports.rpcSend = rpcSend;
-const rpcClientBuilder = (serviceChannel) => (options) => (onError, onSuccess) => (message) => (0, exports.rpcSend)(serviceChannel)(options)(message).pipe((0, fluture_1.fork)(onError)(onSuccess));
+const rpcClientBuilder = (clientOptions) => (options) => (onError, onSuccess) => (message) => (0, exports.rpcSend)(clientOptions)(options)(message).pipe((0, fluture_1.fork)(onError)(onSuccess));
 exports.rpcClientBuilder = rpcClientBuilder;
-const rpcClientFactory = (config) => (0, exports.rpcClientBuilder)(config.serviceChannel)(config.options)(config.onError, config.onSuccess);
+const rpcClientFactory = (config) => (0, exports.rpcClientBuilder)({
+    serviceChannel: config.serviceChannel,
+    clientOptions: config.clientOptions,
+})(config.options)(config.onError, config.onSuccess);
 exports.rpcClientFactory = rpcClientFactory;
-const rpcPromiseBuilder = (serviceChannel) => (options) => (message) => (0, fluture_1.promise)((0, exports.rpcSend)(serviceChannel)(options)(message));
+const rpcPromiseBuilder = (clientOptions) => (options) => (message) => (0, fluture_1.promise)((0, exports.rpcSend)(clientOptions)(options)(message));
 exports.rpcPromiseBuilder = rpcPromiseBuilder;
 //# sourceMappingURL=index.js.map
